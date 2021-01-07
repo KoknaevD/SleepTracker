@@ -17,10 +17,8 @@
 package com.example.android.trackmysleepquality.sleeptracker
 
 import android.app.Application
-import androidx.lifecycle.viewModelScope
-import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.Transformations
+import android.util.Log
+import androidx.lifecycle.*
 import com.example.android.trackmysleepquality.database.SleepDatabaseDao
 import com.example.android.trackmysleepquality.database.SleepNight
 import com.example.android.trackmysleepquality.formatNights
@@ -33,16 +31,14 @@ class SleepTrackerViewModel(
         val database: SleepDatabaseDao,
         application: Application) : AndroidViewModel(application) {
 
+    private val _navigateToSleepQuality = MutableLiveData<SleepNight>()
+    val navigateToSleepQuality: LiveData<SleepNight>
+        get() = _navigateToSleepQuality
 
-    private var viewModelJob = Job()
-
-
-    override fun onCleared() {
-        super.onCleared()
-        viewModelJob.cancel()
+    fun doneNavigating() {
+        _navigateToSleepQuality.value = null
     }
 
-    //private val uiScope = CoroutineScope(Dispatchers.Main + viewModelJob)
 
     private var tonight = MutableLiveData<SleepNight?>()
 
@@ -51,6 +47,28 @@ class SleepTrackerViewModel(
     val nightsString = Transformations.map(nights) { nights ->
         formatNights(nights, application.resources)
     }
+
+
+    val startButtonVisible = Transformations.map(tonight) {
+        null == it
+    }
+
+    val stopButtonVisible = Transformations.map(tonight) {
+        null != it
+    }
+
+    val clearButtonVisible = Transformations.map(nights) {
+        it?.isNotEmpty()
+    }
+
+    private var _showSnackbarEvent = MutableLiveData<Boolean>()
+    val showSnackbarEvent: LiveData<Boolean>
+        get() = _showSnackbarEvent
+
+    fun doneShowingSnackbar() {
+        _showSnackbarEvent.value = false
+    }
+
 
     init {
         initializeTonight()
@@ -91,6 +109,7 @@ class SleepTrackerViewModel(
             oldNight.endTimeMilli = System.currentTimeMillis()
 
             update(oldNight)
+            _navigateToSleepQuality.value = oldNight
         }
     }
 
@@ -102,6 +121,7 @@ class SleepTrackerViewModel(
         viewModelScope.launch {
             clear()
             tonight.value = null
+            _showSnackbarEvent.value = true
         }
     }
 
