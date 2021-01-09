@@ -44,11 +44,6 @@ class SleepTrackerViewModel(
 
     val nights = database.getAllNights()
 
-    val nightsString = Transformations.map(nights) { nights ->
-        formatNights(nights, application.resources)
-    }
-
-
     val startButtonVisible = Transformations.map(tonight) {
         null == it
     }
